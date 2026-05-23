@@ -20,22 +20,41 @@ Use a **prebuilt binary** from [Releases](https://github.com/Chessing234/chirp-t
 
 ### macOS (Apple Silicon or Intel, universal binary)
 
-1. Open the latest release and download **`reminders-macos-universal`**.
-2. In Terminal:
+1. Open the [latest release](https://github.com/Chessing234/chirp-tui/releases/latest) and download **`reminders-macos-universal`**. Safari usually saves it to **`~/Downloads`**.
+
+2. In Terminal, go to the folder that contains the file (adjust the path if yours is different):
+
+```bash
+cd ~/Downloads
+ls reminders-macos-universal
+```
+
+If `ls` says **No such file**, use Finder → Downloads, confirm the exact filename (sometimes it gains a `(1)` suffix), then `cd` to that folder or use the full path in the commands below.
+
+3. Install to `/usr/local/bin` (needs your password once):
 
 ```bash
 chmod +x reminders-macos-universal
+sudo mkdir -p /usr/local/bin
 sudo mv reminders-macos-universal /usr/local/bin/reminders
 ```
 
-3. Run:
+**One-liner** (if the file is definitely in Downloads and named exactly as above):
+
+```bash
+chmod +x ~/Downloads/reminders-macos-universal && sudo mkdir -p /usr/local/bin && sudo mv ~/Downloads/reminders-macos-universal /usr/local/bin/reminders
+```
+
+4. Run:
 
 ```bash
 reminders --help
 reminders
 ```
 
-If you prefer not to use `sudo`, put the file anywhere on your **`PATH`** (for example `~/bin/reminders`).
+If macOS blocks the app (“damaged” or unidentified developer), try: `xattr -dr com.apple.quarantine /usr/local/bin/reminders` then run `reminders` again.
+
+If you prefer not to use `sudo`, put the binary anywhere on your **`PATH`** (for example create `~/bin`, move the file there as `reminders`, and add `export PATH="$HOME/bin:$PATH"` to `~/.zshrc`).
 
 ### Linux (x86_64)
 
