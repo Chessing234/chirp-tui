@@ -1,0 +1,104 @@
+# Build and publish prebuilt binaries when a version tag is pushed (e.g. v1.0.0).
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-linux-x64:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure & build
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build -j"$(nproc)"
+      - name: Strip
+        run: strip build/reminders
+      - name: Rename artifact
+        run: cp build/reminders reminders-linux-x86_64
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reminders-linux-x86_64
+          path: reminders-linux-x86_64
+
+  build-linux-arm64:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure & build
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build -j"$(nproc)"
+      - name: Strip
+        run: strip build/reminders
+      - name: Rename artifact
+        run: cp build/reminders reminders-linux-aarch64
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reminders-linux-aarch64
+          path: reminders-linux-aarch64
+
+  build-macos-universal:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure & build (fat binary)
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"
+          cmake --build build -j"$(sysctl -n hw.ncpu)"
+      - name: Strip
+        run: strip build/reminders
+      - name: Rename artifact
+        run: cp build/reminders reminders-macos-universal
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reminders-macos-universal
+          path: reminders-macos-universal
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure & build
+        shell: cmd
+        run: |
+          cmake -B build
+          cmake --build build --config Release
+      - name: Rename artifact
+        shell: cmd
+        run: copy build\Release\reminders.exe reminders-windows-x86_64.exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reminders-windows-x86_64.exe
+          path: reminders-windows-x86_64.exe
+
+  release:
+    needs:
+      - build-linux-x64
+      - build-linux-arm64
+      - build-macos-universal
+      - build-windows
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: List files
+        run: ls -laR dist
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/**/reminders-linux-x86_64
+            dist/**/reminders-linux-aarch64
+            dist/**/reminders-macos-universal
+            dist/**/reminders-windows-x86_64.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

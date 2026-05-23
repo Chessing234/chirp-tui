@@ -1,0 +1,39 @@
+{
+  "t1_minutes": 60,
+  "t2_minutes": 90,
+  "bell_on_popup": true,
+  "reminders": [
+    {
+      "id": 1,
+      "title": "Fix the deployment bug",
+      "description": "Check staging logs and rollback plan.",
+      "due": "2026-05-22 16:00",
+      "priority": "high",
+      "done": false
+    },
+    {
+      "id": 2,
+      "title": "Review PR #42",
+      "description": "",
+      "due": "",
+      "priority": "medium",
+      "done": false
+    },
+    {
+      "id": 3,
+      "title": "Update README",
+      "description": "Document build and keybindings.",
+      "due": "",
+      "priority": "low",
+      "done": false
+    },
+    {
+      "id": 4,
+      "title": "Old chore (completed)",
+      "description": "",
+      "due": "",
+      "priority": "medium",
+      "done": true
+    }
+  ]
+}
