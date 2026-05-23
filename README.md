@@ -1,0 +1,188 @@
+# CHIRP TUI
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Platforms](https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey.svg)](README.md)
+[![Release CI](https://img.shields.io/github/actions/workflow/status/Chessing234/chirp-tui/release.yml?label=release%20CI)](https://github.com/Chessing234/chirp-tui/actions/workflows/release.yml)
+
+**CHIRP TUI** is a small, dependency-free **C++17 terminal UI** for managing reminders with **two independent background timers**. When a timer fires, the app opens a **full-screen ANSI overlay** (flash, colors, blinking header, optional bell) listing your open high/medium items until you dismiss it.
+
+The program binary is named **`reminders`** (same as the project’s internal target).
+
+- **No ncurses, no JSON libraries** — only the C++ standard library, hand-rolled JSON, and a thin `platform.h` layer (`termios` / `ioctl` on POSIX, `SetConsoleMode` / `ReadConsoleInput` on Windows).
+- **Windows 10+** uses **ConPTY virtual terminal processing** for the same escape-driven UI as macOS/Linux.
+- Data file defaults to **`~/.reminders.json`** (or **`%USERPROFILE%\.reminders.json`** on Windows).
+
+---
+
+## Easiest setup (recommended)
+
+Use a **prebuilt binary** from [Releases](https://github.com/Chessing234/chirp-tui/releases/latest).
+
+### macOS (Apple Silicon or Intel, universal binary)
+
+1. Open the latest release and download **`reminders-macos-universal`**.
+2. In Terminal:
+
+```bash
+chmod +x reminders-macos-universal
+sudo mv reminders-macos-universal /usr/local/bin/reminders
+```
+
+3. Run:
+
+```bash
+reminders --help
+reminders
+```
+
+If you prefer not to use `sudo`, put the file anywhere on your **`PATH`** (for example `~/bin/reminders`).
+
+### Linux (x86_64)
+
+```bash
+VER=1.0.0
+curl -fsSL -o reminders "https://github.com/Chessing234/chirp-tui/releases/download/v${VER}/reminders-linux-x86_64"
+chmod +x reminders
+sudo mv reminders /usr/local/bin/
+```
+
+On **ARM64** Linux, download **`reminders-linux-aarch64`** instead and use the same `chmod` / `mv` steps.
+
+### Windows
+
+1. From the latest release, download **`reminders-windows-x86_64.exe`**.
+2. Rename to **`reminders.exe`** (optional) and place it in a folder on your **`PATH`**, or run it from any folder.
+3. Open **Command Prompt** or **PowerShell** in that folder and run `reminders.exe --help`.
+
+---
+
+## Build from source (also easy)
+
+You need **CMake 3.16+** and a **C++17** compiler.
+
+### macOS / Linux
+
+```bash
+git clone https://github.com/Chessing234/chirp-tui.git
+cd chirp-tui
+cmake -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build -j
+./build/reminders --help
+```
+
+### Windows (Visual Studio generator)
+
+```bat
+git clone https://github.com/Chessing234/chirp-tui.git
+cd chirp-tui
+cmake -B build
+cmake --build build --config Release
+build\Release\reminders.exe --help
+```
+
+### Install into a prefix (Unix)
+
+```bash
+cmake --install build --prefix /usr/local
+```
+
+---
+
+## Optional: Homebrew / Scoop
+
+These install methods need **checksums** filled in after each release (see comments in the formula / manifest).
+
+### macOS (Homebrew, local formula)
+
+```bash
+brew install --formula ./Formula/reminders.rb
+```
+
+### Windows (Scoop)
+
+```powershell
+scoop install https://raw.githubusercontent.com/Chessing234/chirp-tui/main/scoop/reminders.json
+```
+
+Edit `Formula/reminders.rb` and `scoop/reminders.json` to set `url` / `sha256` (or `hash`) from the release assets before relying on them in automation.
+
+---
+
+## Usage
+
+```text
+reminders [options]
+```
+
+### CLI flags
+
+| Flag | Description |
+|------|-------------|
+| `--t1 <min>` | First timer interval in minutes (default **60**). |
+| `--t2 <min>` | Second timer interval in minutes (default **90**). |
+| `--data-file <path>` | JSON file path (default **`~/.reminders.json`**). Leading `~/` expands on all platforms. |
+| `--no-bell` | Disable terminal bell (`\a`) on popups. |
+| `--version`, `-v` | Print version and exit. |
+| `--help`, `-h` | Print help and exit. |
+
+### Keybindings (main list)
+
+| Key | Action |
+|-----|--------|
+| ↑ / ↓ | Move selection |
+| `a` | Add reminder (prompted form) |
+| `e` | Edit selected |
+| `d` | Delete selected |
+| `Space` | Toggle done |
+| `s` | Settings (intervals, bell) |
+| `q` | Quit (saves JSON) |
+
+### Settings (`s`)
+
+| Key | Action |
+|-----|--------|
+| `1` / `2` | Select T1 or T2 for +/- |
+| `+` / `-` | ±5 minutes (min 1) |
+| `b` | Toggle bell |
+| `s` | Save and return |
+| `q` | Return to list |
+
+---
+
+## JSON format
+
+Default path: **`~/.reminders.json`**. Example: see [`reminders.json`](reminders.json) in this repository.
+
+---
+
+## ASCII “screenshot”
+
+```text
+ Reminders  — /home/you/.reminders.json —     Next popup in: 42:17  (T1 55:01 · T2 42:17)
+
+ ── Incomplete — High ──
+ > 🔴 Fix the deployment bug (due 2026-05-22 16:00)
+
+ ── Incomplete — Medium ──
+   🟡 Review PR #42
+
+ ── Incomplete — Low ──
+   🟢 Update README
+
+ ^v move | a add | e edit | d del | space done | s settings | q quit
+```
+
+---
+
+## Contributing
+
+1. Fork the repository.  
+2. Create a branch (`git checkout -b fix-or-feature`).  
+3. Make changes with a clear commit history.  
+4. Open a **Pull Request** describing behavior, platforms tested, and any release-note impact.
+
+---
+
+## License
+
+MIT — see [LICENSE](LICENSE).
