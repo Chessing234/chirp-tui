@@ -11,7 +11,7 @@
 namespace rem {
 
 inline constexpr const char* kDefaultDataFilename = ".reminders.json";
-inline constexpr const char* kVersion = "1.0.0";
+inline constexpr const char* kVersion = "1.0.1";
 
 enum class Priority : std::uint8_t { High = 0, Medium = 1, Low = 2 };
 
@@ -44,7 +44,8 @@ struct Reminder {
 
 struct AppConfig {
   int t1_minutes = 60;
-  int t2_minutes = 90;
+  /// 0 = second timer disabled (no T2 popups). Use settings or --t2 to enable.
+  int t2_minutes = 0;
   bool bell_on_popup = true;
 };
 

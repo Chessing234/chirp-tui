@@ -232,6 +232,10 @@ void timer_thread_fn(AppState* st, int which) {
       std::lock_guard<std::mutex> lock(st->mu);
       minutes = is_t1 ? st->config.t1_minutes : st->config.t2_minutes;
     }
+    if (!is_t1 && minutes <= 0) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(200));
+      continue;
+    }
     if (minutes <= 0) minutes = 1;
 
     auto end = std::chrono::steady_clock::now() + std::chrono::minutes(minutes);
@@ -323,10 +327,15 @@ void draw_main(AppState& st, const UiState& ui, int rows, int cols, const std::s
   {
     std::lock_guard<std::mutex> lock(st.mu);
     cd1 = fmt_countdown(st.last_t1_fire, st.config.t1_minutes);
-    cd2 = fmt_countdown(st.last_t2_fire, st.config.t2_minutes);
     long s1 = seconds_until_next(st.last_t1_fire, st.config.t1_minutes);
-    long s2 = seconds_until_next(st.last_t2_fire, st.config.t2_minutes);
-    long mn = std::min(s1, s2);
+    long mn = s1;
+    if (st.config.t2_minutes > 0) {
+      cd2 = fmt_countdown(st.last_t2_fire, st.config.t2_minutes);
+      long s2 = seconds_until_next(st.last_t2_fire, st.config.t2_minutes);
+      mn = std::min(s1, s2);
+    } else {
+      cd2 = "off";
+    }
     char buf[32];
     std::snprintf(buf, sizeof(buf), "%02ld:%02ld", mn / 60, mn % 60);
     soon = buf;
@@ -433,9 +442,9 @@ void draw_settings(AppState& st, int /*rows*/, int /*cols*/) {
   out << ANSI_CLEAR << ANSI_HIDE_CURSOR;
   out << ansi_goto(2, 2) << "\033[1;33mSettings\033[0m";
   out << ansi_goto(4, 2) << "T1 interval (minutes): " << t1;
-  out << ansi_goto(5, 2) << "T2 interval (minutes): " << t2;
+  out << ansi_goto(5, 2) << "T2 interval (minutes): " << (t2 > 0 ? std::to_string(t2) : std::string("0 (off)"));
   out << ansi_goto(6, 2) << "Bell on popup: " << (bell ? "ON" : "OFF") << "  (press b to toggle)";
-  out << ansi_goto(8, 2) << "\033[1;36mKeys:\033[0m 1/2 select field, +/- adjust, b bell, s save & back, q back";
+  out << ansi_goto(8, 2) << "\033[1;36mKeys:\033[0m 1/2 select field, +/- adjust (T2 min 0=off), b bell, s save & back, q back";
   std::fputs(out.str().c_str(), stdout);
   term::flush_out();
 }
@@ -471,17 +480,17 @@ struct CliOpts {
   bool t1_set = false;
   bool t2_set = false;
   int t1_minutes = 60;
-  int t2_minutes = 90;
+  int t2_minutes = 0;
   bool no_bell = false;
   std::string data_file;
 };
 
 void print_help(const char* argv0) {
-  std::cerr << "reminders — terminal reminder list with dual popup timers.\n\n";
+  std::cerr << "reminders — terminal reminder list with popup check-in timer(s).\n\n";
   std::cerr << "Usage: " << argv0 << " [options]\n\n";
   std::cerr << "Options:\n";
   std::cerr << "  --t1 <min>        Timer 1 interval in minutes (default 60)\n";
-  std::cerr << "  --t2 <min>        Timer 2 interval in minutes (default 90)\n";
+  std::cerr << "  --t2 <min>        Timer 2 in minutes; use 0 to disable (default 0)\n";
   std::cerr << "  --data-file <p>   JSON store path (default: ~/" << kDefaultDataFilename << ")\n";
   std::cerr << "  --no-bell         Disable terminal bell on popups\n";
   std::cerr << "  --version         Print version and exit\n";
@@ -532,7 +541,7 @@ CliOpts parse_cli(int argc, char** argv) {
       try {
         o.t2_minutes = std::stoi(v);
         o.t2_set = true;
-        if (o.t2_minutes <= 0) o.bad = true;
+        if (o.t2_minutes < 0) o.bad = true;
       } catch (...) {
         o.bad = true;
       }
@@ -686,7 +695,7 @@ int main(int argc, char** argv) {
         if (settings_field1)
           st.config.t1_minutes = std::max(1, st.config.t1_minutes - 5);
         else
-          st.config.t2_minutes = std::max(1, st.config.t2_minutes - 5);
+          st.config.t2_minutes = std::max(0, st.config.t2_minutes - 5);
         try_save(data_path, st);
       } else if (ev.kind == term::KeyKind::Char && (ev.ch == 's' || ev.ch == 'S')) {
         try_save(data_path, st);

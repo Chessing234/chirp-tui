@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "description": "Terminal reminder list with dual popup timers (TUI, JSON persistence).",
+  "description": "Terminal reminder list with optional dual popup timers (TUI, JSON persistence).",
   "homepage": "https://github.com/Chessing234/chirp-tui",
   "license": "MIT",
   "architecture": {
