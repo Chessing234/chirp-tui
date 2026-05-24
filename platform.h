@@ -23,6 +23,11 @@
 
 #include <atomic>
 
+#if defined(__APPLE__)
+#include <cstdlib>
+#include <cstring>
+#endif
+
 namespace term {
 
 enum class KeyKind { None, Char, ArrowUp, ArrowDown };
@@ -363,6 +368,29 @@ inline void wait_any_key() {
     raw.c_cc[VTIME] = 0;
     ::tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
   }
+#endif
+}
+
+// macOS: try to bring Terminal / iTerm / WezTerm / Ghostty to the front before a popup.
+// No-op elsewhere. Requires the reminders process (and terminal tab) to still be running;
+// a terminal-only app cannot appear if you quit the terminal or draw over other apps' windows.
+inline void bring_host_terminal_forward() {
+#if defined(__APPLE__)
+  const char* tp = std::getenv("TERM_PROGRAM");
+  if (!tp || !*tp) return;
+  const char* cmd = nullptr;
+  if (std::strcmp(tp, "Apple_Terminal") == 0) {
+    cmd = "osascript -e 'tell application \"Terminal\" to activate' >/dev/null 2>&1";
+  } else if (std::strstr(tp, "iTerm") != nullptr) {
+    cmd = "osascript -e 'tell application \"iTerm2\" to activate' >/dev/null 2>&1";
+  } else if (std::strstr(tp, "WezTerm") != nullptr) {
+    cmd = "osascript -e 'tell application \"WezTerm\" to activate' >/dev/null 2>&1";
+  } else if (std::strstr(tp, "ghostty") != nullptr || std::strstr(tp, "Ghostty") != nullptr) {
+    cmd = "osascript -e 'tell application \"Ghostty\" to activate' >/dev/null 2>&1";
+  }
+  if (cmd) std::system(cmd);
+#else
+  (void)0;
 #endif
 }
 
