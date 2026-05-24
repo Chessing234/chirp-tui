@@ -59,7 +59,7 @@ If you prefer not to use `sudo`, put the binary anywhere on your **`PATH`** (for
 ### Linux (x86_64)
 
 ```bash
-VER=1.0.0
+VER=1.0.1
 curl -fsSL -o reminders "https://github.com/Chessing234/chirp-tui/releases/download/v${VER}/reminders-linux-x86_64"
 chmod +x reminders
 sudo mv reminders /usr/local/bin/
