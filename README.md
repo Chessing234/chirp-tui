@@ -4,7 +4,7 @@
 [![Platforms](https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey.svg)](README.md)
 [![Release CI](https://img.shields.io/github/actions/workflow/status/Chessing234/chirp-tui/release.yml?label=release%20CI)](https://github.com/Chessing234/chirp-tui/actions/workflows/release.yml)
 
-**CHIRP TUI** is a small, dependency-free **C++17 terminal UI** for managing reminders with **two independent background timers**. When a timer fires, the app opens a **full-screen ANSI overlay** (flash, colors, blinking header, optional bell) listing your open high/medium items until you dismiss it.
+**CHIRP TUI** is a small, dependency-free **C++17 terminal UI** for managing reminders with **one or two background timers** (second timer off by default). When a timer fires, the app opens a **full-screen ANSI overlay** (flash, colors, blinking header, optional bell) listing your open high/medium items until you dismiss it.
 
 The program binary is named **`reminders`** (same as the project’s internal target).
 
@@ -138,7 +138,7 @@ reminders [options]
 | Flag | Description |
 |------|-------------|
 | `--t1 <min>` | First timer interval in minutes (default **60**). |
-| `--t2 <min>` | Second timer interval in minutes (default **90**). |
+| `--t2 <min>` | Second timer in minutes; **0** disables it (default **0** = only the 60‑minute timer). |
 | `--data-file <path>` | JSON file path (default **`~/.reminders.json`**). Leading `~/` expands on all platforms. |
 | `--no-bell` | Disable terminal bell (`\a`) on popups. |
 | `--version`, `-v` | Print version and exit. |
@@ -160,8 +160,8 @@ reminders [options]
 
 | Key | Action |
 |-----|--------|
-| `1` / `2` | Select T1 or T2 for +/- |
-| `+` / `-` | ±5 minutes (min 1) |
+| `1` / `2` | Select T1 or T2 for `+` / `-` |
+| `+` / `-` | ±5 minutes (T1 minimum **1**; T2 minimum **0** = second timer off) |
 | `b` | Toggle bell |
 | `s` | Save and return |
 | `q` | Return to list |
@@ -177,7 +177,7 @@ Default path: **`~/.reminders.json`**. Example: see [`reminders.json`](reminders
 ## ASCII “screenshot”
 
 ```text
- Reminders  — /home/you/.reminders.json —     Next popup in: 42:17  (T1 55:01 · T2 42:17)
+ Reminders  — /home/you/.reminders.json —     Next popup in: 55:01  (T1 55:01 · T2 off)
 
  ── Incomplete — High ──
  > 🔴 Fix the deployment bug (due 2026-05-22 16:00)

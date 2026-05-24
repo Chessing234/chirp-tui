@@ -1,6 +1,6 @@
 {
   "t1_minutes": 60,
-  "t2_minutes": 90,
+  "t2_minutes": 0,
   "bell_on_popup": true,
   "reminders": [
     {
