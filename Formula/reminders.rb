@@ -4,7 +4,7 @@ class Reminders < Formula
   desc "TUI reminder list with timed full-screen check-ins (CHIRP TUI)"
   homepage "https://github.com/Chessing234/chirp-tui"
   license "MIT"
-  version "1.0.0"
+  version "1.1.0"
 
   on_macos do
     url "https://github.com/Chessing234/chirp-tui/releases/download/v#{version}/reminders-macos-universal"

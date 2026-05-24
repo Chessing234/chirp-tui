@@ -8,7 +8,6 @@
       "title": "Fix the deployment bug",
       "description": "Check staging logs and rollback plan.",
       "due": "2026-05-22 16:00",
-      "priority": "high",
       "done": false
     },
     {
@@ -16,7 +15,6 @@
       "title": "Review PR #42",
       "description": "",
       "due": "",
-      "priority": "medium",
       "done": false
     },
     {
@@ -24,7 +22,6 @@
       "title": "Update README",
       "description": "Document build and keybindings.",
       "due": "",
-      "priority": "low",
       "done": false
     },
     {
@@ -32,7 +29,6 @@
       "title": "Old chore (completed)",
       "description": "",
       "due": "",
-      "priority": "medium",
       "done": true
     }
   ]

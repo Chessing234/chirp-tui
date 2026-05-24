@@ -55,14 +55,9 @@ std::string ansi_goto(int row, int col) {
   return buf;
 }
 
-std::string color_for_priority(Priority p, bool done) {
+std::string row_style(bool done) {
   if (done) return "\033[2;37m";
-  switch (p) {
-    case Priority::High: return "\033[1;31m";
-    case Priority::Medium: return "\033[1;33m";
-    case Priority::Low: return "\033[1;32m";
-  }
-  return "\033[0m";
+  return "\033[1;37m";
 }
 
 std::string strikethrough_on() { return "\033[9m"; }
@@ -125,31 +120,22 @@ void bell_if(const AppState& st) {
   if (on) term::bell();
 }
 
-struct PopupLine {
-  Priority priority = Priority::Medium;
-  std::string title;
-};
-
-std::vector<PopupLine> popup_items(const AppState& st) {
-  std::vector<PopupLine> hi_med;
-  std::vector<PopupLine> low_only;
+std::vector<std::string> popup_titles(const AppState& st) {
+  std::vector<std::string> out;
   {
     std::lock_guard<std::mutex> lock(st.mu);
     for (const auto& r : st.reminders) {
       if (r.done) continue;
-      PopupLine pl{r.priority, r.title};
-      if (r.priority == Priority::Low)
-        low_only.push_back(std::move(pl));
-      else
-        hi_med.push_back(std::move(pl));
+      out.push_back(r.title);
     }
   }
-  if (!hi_med.empty()) return hi_med;
-  return low_only;
+  return out;
 }
 
 void render_overlay(AppState& st, bool /*from_t1*/) {
   bell_if(st);
+  term::bring_host_terminal_forward();
+  term::flush_out();
   int rows = 24, cols = 80;
   (void)term::get_size(rows, cols);
   // Avoid negative layout if the terminal shrank mid-session.
@@ -161,7 +147,7 @@ void render_overlay(AppState& st, bool /*from_t1*/) {
   term::flush_out();
   flash_screen();
 
-  auto items = popup_items(st);
+  auto titles = popup_titles(st);
   const int box_w = std::max(8, std::min(cols - 2, 72));
   const int inner_w = std::max(4, box_w - 2);
   const int box_lines = 12;
@@ -195,18 +181,15 @@ void render_overlay(AppState& st, bool /*from_t1*/) {
   }
   ++row;
 
-  if (items.empty()) {
+  if (titles.empty()) {
     std::string msg = ansi_goto(row++, start_col + 2);
-    msg += "\033[1;36m(No open high/medium reminders — you're clear!)\033[0m";
+    msg += "\033[1;36m(No open reminders — you're clear!)\033[0m";
     std::fputs(msg.c_str(), stdout);
   } else {
-    for (const PopupLine& pl : items) {
+    for (const std::string& t : titles) {
       if (row >= start_row + 9) break;
-      std::string pri = pl.priority == Priority::High ? "\033[1;31m[HIGH]\033[0m"
-                         : pl.priority == Priority::Medium ? "\033[1;33m[MED]\033[0m"
-                                                            : "\033[1;32m[LOW]\033[0m";
-      std::string title = truncate_utf8_safe(pl.title, static_cast<std::size_t>(inner_w - 12));
-      std::string line = ansi_goto(row++, start_col + 2) + pri + "  " + "\033[1;37m" + title + "\033[0m";
+      std::string title = truncate_utf8_safe(t, static_cast<std::size_t>(inner_w - 4));
+      std::string line = ansi_goto(row++, start_col + 2) + "\033[1;37m• " + title + "\033[0m";
       std::fputs(line.c_str(), stdout);
     }
   }
@@ -267,26 +250,9 @@ struct UiState {
   std::size_t sel_index = 0;
 };
 
-bool priority_from_char(char c, Priority& p) {
-  if (c == '1' || c == 'h' || c == 'H') {
-    p = Priority::High;
-    return true;
-  }
-  if (c == '2' || c == 'm' || c == 'M') {
-    p = Priority::Medium;
-    return true;
-  }
-  if (c == '3' || c == 'l' || c == 'L') {
-    p = Priority::Low;
-    return true;
-  }
-  return false;
-}
-
 void sort_reminders_inplace(std::vector<Reminder>& v) {
   std::sort(v.begin(), v.end(), [](const Reminder& a, const Reminder& b) {
     if (a.done != b.done) return a.done < b.done;
-    if (a.priority != b.priority) return static_cast<int>(a.priority) < static_cast<int>(b.priority);
     return a.id < b.id;
   });
 }
@@ -362,42 +328,18 @@ void draw_main(AppState& st, const UiState& ui, int rows, int cols, const std::s
     auto emit_rem = [&](const Reminder& r, bool selected) {
       if (row >= max_row) return;
       std::string mark = selected ? "\033[1;7m>\033[0m " : "  ";
-      std::string pri = std::string(priority_emoji(r.priority)) + " ";
-      std::string base = color_for_priority(r.priority, r.done) + pri + (r.done ? strikethrough_on() : "") + r.title +
-                         (r.done ? strikethrough_off() : "") + ANSI_RESET;
+      std::string base = row_style(r.done) + (r.done ? strikethrough_on() : "") + r.title + (r.done ? strikethrough_off() : "") + ANSI_RESET;
       if (!r.due.empty()) base += std::string(" \033[2;36m(due ") + r.due + ")\033[0m";
       std::string line = mark + base;
       line = truncate_utf8_safe(line, static_cast<std::size_t>(cols - 1));
       out << ansi_goto(row++, 1) << line;
     };
 
-    emit_section("── Incomplete — High ──");
+    emit_section("── Open ──");
     bool any = false;
     for (std::size_t i = 0; i < list.size(); ++i) {
       const Reminder& r = list[i];
-      if (!r.done && r.priority == Priority::High) {
-        emit_rem(r, i == ui.sel_index);
-        any = true;
-      }
-    }
-    if (!any && row < max_row) out << ansi_goto(row++, 3) << "\033[2;37m(empty)\033[0m";
-
-    emit_section("── Incomplete — Medium ──");
-    any = false;
-    for (std::size_t i = 0; i < list.size(); ++i) {
-      const Reminder& r = list[i];
-      if (!r.done && r.priority == Priority::Medium) {
-        emit_rem(r, i == ui.sel_index);
-        any = true;
-      }
-    }
-    if (!any && row < max_row) out << ansi_goto(row++, 3) << "\033[2;37m(empty)\033[0m";
-
-    emit_section("── Incomplete — Low ──");
-    any = false;
-    for (std::size_t i = 0; i < list.size(); ++i) {
-      const Reminder& r = list[i];
-      if (!r.done && r.priority == Priority::Low) {
+      if (!r.done) {
         emit_rem(r, i == ui.sel_index);
         any = true;
       }
@@ -462,15 +404,6 @@ std::optional<Reminder> find_by_id(AppState& st, std::uint64_t id) {
   for (const auto& r : st.reminders)
     if (r.id == id) return r;
   return std::nullopt;
-}
-
-const char* priority_hint(Priority p) {
-  switch (p) {
-    case Priority::High: return "1/H";
-    case Priority::Medium: return "2/M";
-    case Priority::Low: return "3/L";
-  }
-  return "2/M";
 }
 
 struct CliOpts {
@@ -739,21 +672,11 @@ int main(int argc, char** argv) {
         tm.resume_raw();
         continue;
       }
-      std::cout << "Priority: 1=High 2=Medium 3=Low [2]: ";
-      std::cout.flush();
-      std::string pline;
-      if (!read_dialog_line(pline, st)) {
-        tm.resume_raw();
-        continue;
-      }
-      Priority p = Priority::Medium;
-      if (!pline.empty()) (void)priority_from_char(pline[0], p);
       Reminder nr;
       nr.id = next_id(st);
       nr.title = title.empty() ? "(untitled)" : title;
       nr.description = desc;
       nr.due = due;
-      nr.priority = p;
       nr.done = false;
       {
         std::lock_guard<std::mutex> lock(st.mu);
@@ -795,15 +718,6 @@ int main(int argc, char** argv) {
         continue;
       }
       if (due.empty()) due = cur->due;
-      std::cout << "Priority 1=H 2=M 3=L [" << priority_hint(cur->priority) << "]: ";
-      std::cout.flush();
-      std::string pline;
-      if (!read_dialog_line(pline, st)) {
-        tm.resume_raw();
-        continue;
-      }
-      Priority p = cur->priority;
-      if (!pline.empty()) (void)priority_from_char(pline[0], p);
       {
         std::lock_guard<std::mutex> lock(st.mu);
         for (auto& r : st.reminders) {
@@ -811,7 +725,6 @@ int main(int argc, char** argv) {
             r.title = title;
             r.description = desc;
             r.due = due;
-            r.priority = p;
             break;
           }
         }

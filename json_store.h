@@ -70,33 +70,6 @@ inline std::string json_escape(const std::string& s) {
   return o;
 }
 
-inline std::string priority_to_json(rem::Priority p) {
-  using rem::Priority;
-  switch (p) {
-    case Priority::High: return "high";
-    case Priority::Medium: return "medium";
-    case Priority::Low: return "low";
-  }
-  return "medium";
-}
-
-inline bool priority_from_json(const std::string& s, rem::Priority& out) {
-  using rem::Priority;
-  if (s == "high") {
-    out = Priority::High;
-    return true;
-  }
-  if (s == "medium") {
-    out = Priority::Medium;
-    return true;
-  }
-  if (s == "low") {
-    out = Priority::Low;
-    return true;
-  }
-  return false;
-}
-
 inline void skip_ws(const std::string& s, std::size_t& i) {
   while (i < s.size() && std::isspace(static_cast<unsigned char>(s[i]))) ++i;
 }
@@ -294,9 +267,8 @@ inline bool parse_reminder_object(const std::string& s, std::size_t& i, rem::Rem
     } else if (key == "due") {
       if (!parse_string(s, i, r.due)) return false;
     } else if (key == "priority") {
-      std::string pv;
-      if (!parse_string(s, i, pv)) return false;
-      if (!priority_from_json(pv, r.priority)) r.priority = rem::Priority::Medium;
+      // Legacy field from older saves; ignore value.
+      if (!skip_json_value(s, i)) return false;
     } else if (key == "done") {
       if (!parse_bool(s, i, r.done)) return false;
     } else {
@@ -397,7 +369,6 @@ inline bool load_reminders(const std::string& path, rem::AppState& st) {
 
 inline bool save_reminders(const std::string& path, const rem::AppState& st) {
   using detail::json_escape;
-  using detail::priority_to_json;
   std::ostringstream oss;
   oss << "{\n";
   oss << "  \"t1_minutes\": " << st.config.t1_minutes << ",\n";
@@ -413,7 +384,6 @@ inline bool save_reminders(const std::string& path, const rem::AppState& st) {
       oss << "      \"title\": \"" << json_escape(r.title) << "\",\n";
       oss << "      \"description\": \"" << json_escape(r.description) << "\",\n";
       oss << "      \"due\": \"" << json_escape(r.due) << "\",\n";
-      oss << "      \"priority\": \"" << priority_to_json(r.priority) << "\",\n";
       oss << "      \"done\": " << (r.done ? "true" : "false") << "\n";
       oss << "    }";
       if (k + 1 < st.reminders.size()) oss << ",";

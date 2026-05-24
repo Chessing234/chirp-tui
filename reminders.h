@@ -11,34 +11,13 @@
 namespace rem {
 
 inline constexpr const char* kDefaultDataFilename = ".reminders.json";
-inline constexpr const char* kVersion = "1.0.1";
-
-enum class Priority : std::uint8_t { High = 0, Medium = 1, Low = 2 };
-
-inline const char* priority_label(Priority p) {
-  switch (p) {
-    case Priority::High: return "HIGH";
-    case Priority::Medium: return "MED";
-    case Priority::Low: return "LOW";
-  }
-  return "?";
-}
-
-inline const char* priority_emoji(Priority p) {
-  switch (p) {
-    case Priority::High: return "🔴";
-    case Priority::Medium: return "🟡";
-    case Priority::Low: return "🟢";
-  }
-  return "⚪";
-}
+inline constexpr const char* kVersion = "1.1.0";
 
 struct Reminder {
   std::uint64_t id = 0;
   std::string title;
   std::string description;  // optional
-  std::string due;          // optional ISO-like string, empty if none
-  Priority priority = Priority::Medium;
+  std::string due;          // optional free text
   bool done = false;
 };
 
