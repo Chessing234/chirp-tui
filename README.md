@@ -24,6 +24,8 @@ The program binary is named **`reminders`** (same as the project’s internal ta
 | Terminal **open but in the background** (another app is focused) | On **macOS**, before the overlay the app tries to **bring Terminal / iTerm2 / WezTerm / Ghostty to the front** (based on `$TERM_PROGRAM`). Then the usual fullscreen overlay appears **in that terminal**. This is **best-effort** and does not apply to every terminal. |
 | You want a banner **on top of Chrome / games / full-screen apps** | A terminal program **cannot** do that. You would need **macOS notifications**, a **menu bar app**, or Apple’s **Reminders / Calendar** — a different architecture than this repo. |
 
+**Optional (macOS):** this repo includes **ChirpAlerts**, a small **menu bar** companion that reads the same `~/.reminders.json`, mirrors **T1/T2**, and fires **system notifications** plus a **floating HUD**. It is **not** a release binary (build from source with Xcode); see [`macos/ChirpAlerts/README.md`](macos/ChirpAlerts/README.md).
+
 ---
 
 ## Easiest setup (recommended)
@@ -71,7 +73,7 @@ If you prefer not to use `sudo`, put the binary anywhere on your **`PATH`** (for
 ### Linux (x86_64)
 
 ```bash
-VER=1.1.0
+VER=1.2.0
 curl -fsSL -o reminders "https://github.com/Chessing234/chirp-tui/releases/download/v${VER}/reminders-linux-x86_64"
 chmod +x reminders
 sudo mv reminders /usr/local/bin/
