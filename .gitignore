@@ -6,3 +6,6 @@ tmp_home/
 # Local binary copies at repo root (not the JSON sample)
 /reminders
 /reminders.exe
+macos/ChirpAlerts/ChirpAlerts
+macos/ChirpAlerts/ChirpAlerts.app
+macos/ChirpAlerts/.build
