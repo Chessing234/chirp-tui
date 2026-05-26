@@ -125,3 +125,4 @@ Versions should come from **…/Xcode.app/Contents/Developer**. In Xcode: **Sett
 - **Do not run two timer daemons** for the same schedule: if `reminders` (TUI) is also running with live timers, you can get double alerts. Typical setup: edit in the TUI when you want; quit it and leave **ChirpAlerts** running for background alerts—or only run one at a time.
 - **ChirpAlerts** keeps its own “last fired” clock in memory (like the TUI). Restarting the app resets the countdown from “now”.
 - First launch: if `~/.reminders.json` is missing, defaults **T1=60**, **T2=off** are used until the file exists.
+- **UTF-8 BOM** at the start of `~/.reminders.json` (some editors) is stripped before decode, matching the TUI loader.
