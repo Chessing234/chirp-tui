@@ -73,7 +73,7 @@ If you prefer not to use `sudo`, put the binary anywhere on your **`PATH`** (for
 ### Linux (x86_64)
 
 ```bash
-VER=1.2.0
+VER=1.2.1
 curl -fsSL -o reminders "https://github.com/Chessing234/chirp-tui/releases/download/v${VER}/reminders-linux-x86_64"
 chmod +x reminders
 sudo mv reminders /usr/local/bin/
@@ -185,6 +185,8 @@ reminders [options]
 ## JSON format
 
 Default path: **`~/.reminders.json`**. Each reminder has `id`, `title`, `description`, `due`, and `done`. Older files may still contain a legacy `priority` field; it is ignored on load and omitted when saving. Example: [`reminders.json`](reminders.json).
+
+The loader rejects malformed JSON (you will see a parse error and the app starts with in-memory defaults). **`t1_minutes`** is clamped to **1 … 525600** (one year in minutes) and **`t2_minutes`** to **0 … 525600** after a successful read so hand-edited extremes cannot break timers. Files saved with a **UTF-8 BOM** are supported (same as **ChirpAlerts**, which strips the BOM before decoding).
 
 ---
 

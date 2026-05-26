@@ -104,7 +104,11 @@ inline bool parse_int(const std::string& s, std::size_t& i, int& out) {
   if (j < s.size() && (s[j] == '-' || s[j] == '+')) ++j;
   while (j < s.size() && std::isdigit(static_cast<unsigned char>(s[j]))) ++j;
   if (j == i || (j == i + 1 && !std::isdigit(static_cast<unsigned char>(s[i])))) return false;
-  out = std::stoi(s.substr(i, j - i));
+  try {
+    out = std::stoi(s.substr(i, j - i));
+  } catch (...) {
+    return false;
+  }
   i = j;
   return true;
 }
@@ -114,7 +118,11 @@ inline bool parse_uint64(const std::string& s, std::size_t& i, std::uint64_t& ou
   std::size_t j = i;
   while (j < s.size() && std::isdigit(static_cast<unsigned char>(s[j]))) ++j;
   if (j == i) return false;
-  out = std::stoull(s.substr(i, j - i));
+  try {
+    out = std::stoull(s.substr(i, j - i));
+  } catch (...) {
+    return false;
+  }
   i = j;
   return true;
 }
@@ -286,6 +294,15 @@ inline bool parse_reminder_object(const std::string& s, std::size_t& i, rem::Rem
 
 }  // namespace detail
 
+// Keep disk values in sane ranges so timers and UI stay predictable.
+inline void normalize_config(rem::AppConfig& cfg) {
+  constexpr int kMaxMin = 525600;  // 365 days
+  if (cfg.t1_minutes < 1) cfg.t1_minutes = 60;
+  if (cfg.t1_minutes > kMaxMin) cfg.t1_minutes = kMaxMin;
+  if (cfg.t2_minutes < 0) cfg.t2_minutes = 0;
+  if (cfg.t2_minutes > kMaxMin) cfg.t2_minutes = kMaxMin;
+}
+
 inline bool load_reminders(const std::string& path, rem::AppState& st) {
   using namespace detail;
   std::ifstream in(path);
@@ -310,6 +327,7 @@ inline bool load_reminders(const std::string& path, rem::AppState& st) {
       ++i;
       if (i < s.size()) skip_ws(s, i);
       if (i != s.size()) return false;
+      normalize_config(cfg);
       {
         std::lock_guard<std::mutex> lock(st.mu);
         st.reminders = std::move(reminders);
@@ -356,6 +374,7 @@ inline bool load_reminders(const std::string& path, rem::AppState& st) {
     if (expect(s, i, '}')) {
       skip_ws(s, i);
       if (i != s.size()) return false;
+      normalize_config(cfg);
       {
         std::lock_guard<std::mutex> lock(st.mu);
         st.reminders = std::move(reminders);
@@ -369,11 +388,17 @@ inline bool load_reminders(const std::string& path, rem::AppState& st) {
 
 inline bool save_reminders(const std::string& path, const rem::AppState& st) {
   using detail::json_escape;
+  rem::AppConfig cfg{};
+  {
+    std::lock_guard<std::mutex> lock(st.mu);
+    cfg = st.config;
+  }
+  normalize_config(cfg);
   std::ostringstream oss;
   oss << "{\n";
-  oss << "  \"t1_minutes\": " << st.config.t1_minutes << ",\n";
-  oss << "  \"t2_minutes\": " << st.config.t2_minutes << ",\n";
-  oss << "  \"bell_on_popup\": " << (st.config.bell_on_popup ? "true" : "false") << ",\n";
+  oss << "  \"t1_minutes\": " << cfg.t1_minutes << ",\n";
+  oss << "  \"t2_minutes\": " << cfg.t2_minutes << ",\n";
+  oss << "  \"bell_on_popup\": " << (cfg.bell_on_popup ? "true" : "false") << ",\n";
   oss << "  \"reminders\": [\n";
   {
     std::lock_guard<std::mutex> lock(st.mu);

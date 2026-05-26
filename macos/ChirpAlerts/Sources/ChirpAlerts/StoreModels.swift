@@ -22,7 +22,11 @@ enum StoreIO {
     }
 
     static func load(from url: URL = defaultURL) -> ReminderStore? {
-        guard let data = try? Data(contentsOf: url) else { return nil }
+        guard var data = try? Data(contentsOf: url) else { return nil }
+        // Match C++ loader: skip UTF-8 BOM so editors that write EF BB BF do not break decode.
+        if data.count >= 3, data[0] == 0xEF, data[1] == 0xBB, data[2] == 0xBF {
+            data.removeFirst(3)
+        }
         let dec = JSONDecoder()
         return try? dec.decode(ReminderStore.self, from: data)
     }
